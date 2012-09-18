@@ -39,6 +39,8 @@
 @end
 
 @interface SNRHUDWindowFrameView : NSView
+
+@property (nonatomic) BOOL shouldDrawTitle;
 - (void)snr_drawTitleInRect:(NSRect)rect;
 @end
 
@@ -87,16 +89,20 @@
     SNRHUDWindowFrameView *frameView = [super contentView];
     if (!frameView) {
         frameView = [[SNRHUDWindowFrameView alloc] initWithFrame:bounds];
-        NSSize buttonSize = SNRWindowButtonSize;
-        NSRect buttonRect = NSMakeRect(SNRWindowButtonEdgeMargin, NSMaxY(frameView.bounds) -(SNRWindowButtonEdgeMargin + buttonSize.height), buttonSize.width, buttonSize.height);
-        NSButton *closeButton = [[NSButton alloc] initWithFrame:buttonRect];
-        [closeButton setCell:[[SNRHUDWindowButtonCell alloc] init]];
-        [closeButton setButtonType:NSMomentaryChangeButton];
-        [closeButton setTarget:self];
-        [closeButton setAction:@selector(close)];
-        [closeButton setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
-        [frameView addSubview:closeButton];
-        [super setContentView:frameView];
+        if (self.styleMask & NSTitledWindowMask) {
+            frameView.shouldDrawTitle = TRUE;
+            NSSize buttonSize = SNRWindowButtonSize;
+            NSRect buttonRect = NSMakeRect(SNRWindowButtonEdgeMargin, NSMaxY(frameView.bounds) -(SNRWindowButtonEdgeMargin + buttonSize.height), buttonSize.width, buttonSize.height);
+            NSButton *closeButton = [[NSButton alloc] initWithFrame:buttonRect];
+            [closeButton setCell:[[SNRHUDWindowButtonCell alloc] init]];
+            [closeButton setButtonType:NSMomentaryChangeButton];
+            [closeButton setTarget:self];
+            [closeButton setAction:@selector(close)];
+            [closeButton setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
+            [frameView addSubview:closeButton];
+        }
+      [super setContentView:frameView];
+
     }
     if (__customContentView) {
         [__customContentView removeFromSuperview];
@@ -132,12 +138,16 @@
     NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:drawingRect xRadius:SNRWindowCornerRadius yRadius:SNRWindowCornerRadius];
     [NSGraphicsContext saveGraphicsState];
     [path addClip];
+
     // Fill in the title bar with a gradient background
     NSRect titleBarRect = NSMakeRect(0.f, NSMaxY(self.bounds) - SNRWindowTitlebarHeight, self.bounds.size.width, SNRWindowTitlebarHeight);
     NSGradient *titlebarGradient = [[NSGradient alloc] initWithStartingColor:SNRWindowBottomColor endingColor:SNRWindowTopColor];
     [titlebarGradient drawInRect:titleBarRect angle:90.f];
-    // Draw the window title
-    [self snr_drawTitleInRect:titleBarRect];
+    if (self.shouldDrawTitle) {
+        // Draw the window title
+        [self snr_drawTitleInRect:titleBarRect];
+    }
+    
     // Rest of the window has a solid fill
     NSRect bottomRect = NSMakeRect(0.f, 0.f, self.bounds.size.width, self.bounds.size.height - SNRWindowTitlebarHeight);
     [SNRWindowBottomColor set];
